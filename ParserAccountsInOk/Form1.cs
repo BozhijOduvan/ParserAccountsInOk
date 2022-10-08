@@ -14,7 +14,7 @@ namespace ParserAccountsInOk
         private static IWebDriver _chromeDriver;
         private static string _url;
         int x;
-        
+        int counter = 0;
         string page_source;
 
         public Form1()
@@ -49,7 +49,7 @@ namespace ParserAccountsInOk
             {
                 timer3.Enabled = false;
                 timer1.Enabled = false;
-                
+                timer4.Enabled = true;
                 x = 0;
                 label1.Text = x.ToString();
                 timer2.Enabled = true;
@@ -57,7 +57,19 @@ namespace ParserAccountsInOk
             }
         }
 
-       
+        private void ProgressChanged()
+        {
+            counter++;
+            switch (counter % 6)
+            {
+                case 0: label6.Text = "Идёт поиск."; break;
+                case 1: label6.Text = "Идёт поиск.."; break;
+                case 2: label6.Text = "Идёт поиск..."; break;
+                case 3: label6.Text = "Идёт поиск...."; break;
+                case 4: label6.Text = "Идёт поиск....."; break;
+                case 5: label6.Text = "Идёт поиск......"; break;
+            }
+        }
 
         void PoiskLink()
         {
@@ -70,7 +82,7 @@ namespace ParserAccountsInOk
                     if (link.Text == "Показать ещё")
                     {
                         link.Click();
-                        new Thread(() => { BeginInvoke(new Action(() => timer3.Enabled = true)); }).Start();
+                        new Thread(() => { BeginInvoke(new Action(() => timer3.Enabled = true)); timer4.Enabled = false;}).Start();
                         return;
                     }
                 }
@@ -101,7 +113,7 @@ namespace ParserAccountsInOk
             if (x == 4)
             {
                 timer3.Enabled = false;
-                
+                timer4.Enabled = true;
                 PoiskLink();
                 x = 0;
                 label1.Text = x.ToString();
@@ -128,7 +140,7 @@ namespace ParserAccountsInOk
 
         private void timer4_Tick(object sender, EventArgs e)
         {
-            
+            ProgressChanged();
         }
     }
 }
