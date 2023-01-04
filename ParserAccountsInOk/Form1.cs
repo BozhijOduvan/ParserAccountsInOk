@@ -15,8 +15,6 @@ namespace ParserAccountsInOk
         private static string _url;
         int x;
         int counter = 0;
-        string page_source;
-
         public Form1()
         {
             InitializeComponent();
@@ -35,7 +33,7 @@ namespace ParserAccountsInOk
         void downScroll()
         {
             label6.Text = "";
-            ++x;
+            x++;
             label1.Text = x.ToString();
             _chromeDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(100);
             IJavaScriptExecutor js = (IJavaScriptExecutor)_chromeDriver;
@@ -82,12 +80,12 @@ namespace ParserAccountsInOk
                     if (link.Text == "Показать ещё")
                     {
                         link.Click();
-                        new Thread(() => { BeginInvoke(new Action(() => timer3.Enabled = true)); timer4.Enabled = false;}).Start();
+                        new Thread(() => { BeginInvoke(new Action(() => timer3.Enabled = true)); timer4.Enabled = false; }).Start();
                         return;
                     }
                 }
                 {
-                    new Thread(() => { BeginInvoke(new Action(() => copyHTML())); }).Start();
+                    new Thread(() => { BeginInvoke(new Action(() => timer4.Enabled = false)); parsUrl(); }).Start();
                     new Thread(() => { BeginInvoke(new Action(() => timer2.Enabled = false)); }).Start();
                     return;
                 }
@@ -96,16 +94,28 @@ namespace ParserAccountsInOk
 
         void parsUrl()
         {
-            //string link =textBox1.Text;
-
-            MatchCollection match = Regex.Matches(page_source, @"\""/profile(.*?)\?st\.(.*?)""");//@"\""/profile(.*?)"""
-            foreach (Match m in match)
             {
-                textBox1.Text += "https://ok.ru/profile" + m.Groups[1].Value + Environment.NewLine;
+                Thread t = new Thread(() =>
+                {
+                    Thread.CurrentThread.IsBackground = true;
+                    label6.Text = "Идёт поиск ссылок";
+                    List<string> people = new List<string>();
+                    MatchCollection match = Regex.Matches(_chromeDriver.PageSource, @"\""/profile(.*?)\?st\.(.*?)""");//@"\""/profile(.*?)"""
+                    foreach (Match m in match)
+                    {
+                        people.Add("https://ok.ru/profile" + m.Groups[1].Value);
+                    }
+                    for (int i = 0; i < people.Count; i++)
+                    {
+                        textBox1.Text += people[i].ToString() + "\r\n";
+                    }
+                    textBox1.Lines = textBox1.Lines.Distinct().ToArray(); //удаляем дубли
+                }
+                ); t.Start();
+                t.Join();
             }
-            textBox1.Lines = textBox1.Lines.Distinct().ToArray(); //удаляем дубли
+            label6.Text = "Ссылки добавлены.";
             label5.Text = DateTime.Now.ToString();
-
         }
 
         private void timer2_Tick(object sender, EventArgs e)
@@ -124,18 +134,6 @@ namespace ParserAccountsInOk
         {
             //Скроллбар в низ
             downScroll();
-        }
-
-        void copyHTML()
-        {
-            timer2.Enabled = false;
-
-            page_source = _chromeDriver.PageSource;
-            //textBox1.Text = page_source;
-
-            Thread.Sleep(1000);
-
-            parsUrl();
         }
 
         private void timer4_Tick(object sender, EventArgs e)
