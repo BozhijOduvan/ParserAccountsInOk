@@ -13,8 +13,10 @@ namespace ParserAccountsInOk
     {
         private static IWebDriver _chromeDriver;
         private static string _url;
-        int x;
-        int counter = 0;
+        int j, x;
+        string str = "-------------";
+        char[] ProgressTmp;
+
         public Form1()
         {
             InitializeComponent();
@@ -55,20 +57,6 @@ namespace ParserAccountsInOk
             }
         }
 
-        private void ProgressChanged()
-        {
-            counter++;
-            switch (counter % 6)
-            {
-                case 0: label6.Text = "Идёт поиск."; break;
-                case 1: label6.Text = "Идёт поиск.."; break;
-                case 2: label6.Text = "Идёт поиск..."; break;
-                case 3: label6.Text = "Идёт поиск...."; break;
-                case 4: label6.Text = "Идёт поиск....."; break;
-                case 5: label6.Text = "Идёт поиск......"; break;
-            }
-        }
-
         void PoiskLink()
         {
             new Thread(() =>
@@ -85,20 +73,22 @@ namespace ParserAccountsInOk
                     }
                 }
                 {
-                    new Thread(() => { BeginInvoke(new Action(() => timer4.Enabled = false)); parsUrl(); }).Start();
+                    new Thread(() => { BeginInvoke(new Action(() => timer4.Enabled = false)); parsUrl(); label6.Text = "Идёт поиск ссылок"; }).Start();
                     new Thread(() => { BeginInvoke(new Action(() => timer2.Enabled = false)); }).Start();
                     return;
                 }
             }).Start();
         }
-
         void parsUrl()
         {
             {
                 Thread t = new Thread(() =>
                 {
                     Thread.CurrentThread.IsBackground = true;
-                    label6.Text = "Идёт поиск ссылок";
+                    label6.Invoke((MethodInvoker)delegate
+                    {
+                        label6.Text = "Идёт поиск ссылок";
+                    });
                     List<string> people = new List<string>();
                     MatchCollection match = Regex.Matches(_chromeDriver.PageSource, @"\""/profile(.*?)\?st\.(.*?)""");//@"\""/profile(.*?)"""
                     foreach (Match m in match)
@@ -107,15 +97,24 @@ namespace ParserAccountsInOk
                     }
                     for (int i = 0; i < people.Count; i++)
                     {
-                        textBox1.Text += people[i].ToString() + "\r\n";
+                        textBox1.Invoke((MethodInvoker)delegate
+                        {
+                            textBox1.Text += people[i].ToString() + "\r\n";
+                        });
                     }
-                    textBox1.Lines = textBox1.Lines.Distinct().ToArray(); //удаляем дубли
+                    textBox1.Invoke((MethodInvoker)delegate
+                    {
+                        textBox1.Lines = textBox1.Lines.Distinct().ToArray(); //удаляем дубли
+                    });
                 }
                 ); t.Start();
                 t.Join();
             }
-            label6.Text = "Ссылки добавлены.";
-            label5.Text = DateTime.Now.ToString();
+            new Thread(() => {
+                BeginInvoke(new Action(() =>
+            label6.Text = "Ссылки добавлены."));
+                label5.Text = DateTime.Now.ToString();
+            }).Start();
         }
 
         private void timer2_Tick(object sender, EventArgs e)
@@ -136,9 +135,24 @@ namespace ParserAccountsInOk
             downScroll();
         }
 
+        public void SetProgress(Label _Label, int Progres)
+        {
+            char tmp;
+            ProgressTmp = str.ToCharArray();
+            tmp = ProgressTmp[Progres];
+            ProgressTmp[Progres] = '\0';
+            _Label.Text = "Идёт поиск" + new string(ProgressTmp);
+            ProgressTmp[Progres] = tmp;
+        }
+
         private void timer4_Tick(object sender, EventArgs e)
         {
-            ProgressChanged();
+            if (j > 12)
+            {
+                j = 0;
+            }
+            SetProgress(label6, j);
+            j++;
         }
     }
 }
